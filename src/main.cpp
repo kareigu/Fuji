@@ -1,8 +1,8 @@
-#include <fmt/core.h>
+#include <Application/core.h>
 
 
 int main() {
-  fmt::print("fmt");
+  int result = Application::run();
 
-  return 0;
+  return result;
 }

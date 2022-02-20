@@ -19,7 +19,8 @@ project "Application"
    files { source_files }
 
    includedirs {
-     "vendor/fmt/include"
+	"src/",
+     "vendor/fmt/include",
    }
 
    libdirs { "vendor" }
