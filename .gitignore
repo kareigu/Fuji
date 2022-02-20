@@ -1,0 +1,6 @@
+.vs/
+build/
+Makefile
+*.make
+*.sln
+*.vcxproj*
