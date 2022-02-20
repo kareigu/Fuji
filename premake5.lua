@@ -13,7 +13,6 @@ workspace "Application"
 project "Application"
    kind "ConsoleApp"
    language "C++"
-   cppdialect "C++20"
    targetdir "build/bin/%{cfg.buildcfg}"
    objdir "build/obj/%{cfg.buildcfg}"
 
@@ -28,6 +27,13 @@ project "Application"
    links {
       "fmt"
    }
+   
+   filter "system:windows"
+      cppdialect "C++20"
+
+   filter "system:linux"
+      cppdialect "gnu++2a"
+
 
    filter "configurations:Debug"
       defines { "DEBUG" }
