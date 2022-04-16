@@ -1,8 +1,8 @@
-#include "Core/core.h"
+#include "Fuji/core.h"
 
 
 int main() {
-  int result = core::run();
+  int result = fuji::run();
 
   return result;
 }

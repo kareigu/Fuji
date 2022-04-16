@@ -5,9 +5,9 @@
 
 #include "window.h"
 
-namespace core {
+namespace fuji {
 	int run() {
-		Window window(800, 600, "Engine");
+		Window window(800, 600, "Fuji Engine");
 
 		if (window.init())
 			return EXIT_FAILURE;

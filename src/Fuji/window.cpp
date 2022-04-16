@@ -9,7 +9,7 @@
 
 
 
-namespace core {
+namespace fuji {
 
 	static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 		QueueFamilyIndices indices;

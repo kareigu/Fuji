@@ -7,7 +7,7 @@
 #include <string>
 #include <optional>
 
-namespace core {
+namespace fuji {
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphics;
 
