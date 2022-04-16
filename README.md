@@ -1,2 +1,3 @@
-# C++ Template  
-## std:20 with premake and fmt
+# Fuji Engine 
+## C++ game engine utilising Vulkan
+Made entirely as a learning project about Vulkan
