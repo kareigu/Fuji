@@ -41,7 +41,9 @@ namespace core {
 
 		VkPhysicalDevice m_physical_device = VK_NULL_HANDLE;
 		VkDevice m_device = VK_NULL_HANDLE;
+
 		QueueFamilyIndices m_queue_families{};
+		VkQueue m_graphics_queue = VK_NULL_HANDLE;
 	};
 }
 

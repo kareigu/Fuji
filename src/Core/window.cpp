@@ -138,6 +138,9 @@ namespace core {
 
 		fmt::print("Created VkDevice({:p})\n", (void*)&m_device);
 
+		vkGetDeviceQueue(m_device, m_queue_families.graphics.value(), 0, &m_graphics_queue);
+		fmt::print("Got m_graphics_queue handle ({:p})\n", (void*)&m_graphics_queue);
+
 		return EXIT_SUCCESS;
 	}
 
