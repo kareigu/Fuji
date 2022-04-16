@@ -5,9 +5,15 @@
 #include <GLFW/glfw3.h>
 
 #include <string>
-
+#include <optional>
 
 namespace core {
+	struct QueueFamilyIndices {
+		std::optional<uint32_t> graphics;
+
+		bool ready() { return graphics.has_value(); }
+	};
+
 	class Window {
 	public:
 		Window(const int width, const int height, std::string window_title);
@@ -26,9 +32,16 @@ namespace core {
 		const int m_height = 600;
 		std::string m_title{};
 
+		int pickPhysicalDevice();
+		int createLogicalDevice();
+
 		GLFWwindow* m_window = nullptr;
 		VkInstance m_instance{};
 		VkSurfaceKHR m_surface{};
+
+		VkPhysicalDevice m_physical_device = VK_NULL_HANDLE;
+		VkDevice m_device = VK_NULL_HANDLE;
+		QueueFamilyIndices m_queue_families{};
 	};
 }
 

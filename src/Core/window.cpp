@@ -4,8 +4,46 @@
 
 
 #include <vector>
+#include <optional>
+
+
+
 
 namespace core {
+
+	static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+		QueueFamilyIndices indices;
+
+		uint32_t queue_family_count = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+
+		int i = 0;
+		for (const auto& queue_family : queue_families) {
+			if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				if (indices.ready())
+					break;
+				indices.graphics = i;
+			}
+
+			i++;
+		}
+
+		return indices;
+	}
+
+	static bool deviceSuitable(VkPhysicalDevice device, QueueFamilyIndices queue_family_indices) {
+		VkPhysicalDeviceProperties device_properties;
+		VkPhysicalDeviceFeatures device_features;
+		vkGetPhysicalDeviceProperties(device, &device_properties);
+		vkGetPhysicalDeviceFeatures(device, &device_features);
+
+
+		return device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && device_features.geometryShader && queue_family_indices.ready();
+	}
+
 
 	bool Window::shouldRun() {
 		return m_window ? !glfwWindowShouldClose(m_window) : false;
@@ -16,6 +54,8 @@ namespace core {
 	}
 
 	void Window::close() {
+		vkDestroyDevice(m_device, nullptr);
+		fmt::print("Destroyed VkDevice\n");
 		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 		fmt::print("Destroyed VkSurfaceKHR\n");
 		vkDestroyInstance(m_instance, nullptr);
@@ -60,12 +100,12 @@ namespace core {
 		createInfo.enabledLayerCount = 0;
 
 
-		uint32_t extensionCount = 0;
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+		uint32_t extension_count = 0;
+		vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
 
-		std::vector<VkExtensionProperties> extensions(extensionCount);
+		std::vector<VkExtensionProperties> extensions(extension_count);
 
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+		vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extensions.data());
 
 		fmt::print("available extensions:\n");
 
@@ -85,6 +125,19 @@ namespace core {
 		}
 		fmt::print("Created VkSurface({:p}) for Window({:p})\n", (void*)&m_surface, (void*)m_window);
 
+		if (pickPhysicalDevice()) {
+			fmt::print("Failed getting VkPhysicalDevice\n");
+			return EXIT_FAILURE;
+		}
+		
+		fmt::print("Picked VkPhysicalDevice({:p})\n", (void*)&m_physical_device);
+
+		if (createLogicalDevice()) {
+			fmt::print("Failed creating VkDevice\n");
+		}
+
+		fmt::print("Created VkDevice({:p})\n", (void*)&m_device);
+
 		return EXIT_SUCCESS;
 	}
 
@@ -92,4 +145,52 @@ namespace core {
 		: m_width(width), m_height(height), m_title(window_title) {}
 
 	Window::~Window() {};
+
+	int Window::pickPhysicalDevice() {
+		uint32_t device_count;
+		vkEnumeratePhysicalDevices(m_instance, &device_count, nullptr);
+
+		std::vector<VkPhysicalDevice> physical_devices(device_count);
+		vkEnumeratePhysicalDevices(m_instance, &device_count, physical_devices.data());
+
+
+		for (const auto& device : physical_devices) {
+			m_queue_families = findQueueFamilies(device);
+			if (deviceSuitable(device, m_queue_families)) {
+				m_physical_device = device;
+				break;
+			}
+		}
+
+		return m_physical_device == VK_NULL_HANDLE ? EXIT_FAILURE : EXIT_SUCCESS;
+	}
+
+	int Window::createLogicalDevice() {
+		VkDeviceQueueCreateInfo queue_create_info{};
+		queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queue_create_info.queueFamilyIndex = m_queue_families.graphics.value();
+		queue_create_info.queueCount = 1;
+
+		float queue_priority = 1.0f;
+		queue_create_info.pQueuePriorities = &queue_priority;
+
+		VkPhysicalDeviceFeatures device_features{};
+
+		VkDeviceCreateInfo create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+		create_info.pQueueCreateInfos = &queue_create_info;
+		create_info.queueCreateInfoCount = 1;
+
+		create_info.pEnabledFeatures = &device_features;
+		create_info.enabledLayerCount = 0;
+
+		if (vkCreateDevice(m_physical_device, &create_info, nullptr, &m_device) != VK_SUCCESS)
+			return EXIT_FAILURE;
+
+		return EXIT_SUCCESS;
+	}
+
+
+
 }
