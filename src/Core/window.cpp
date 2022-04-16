@@ -16,7 +16,10 @@ namespace core {
 	}
 
 	void Window::close() {
+		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+		fmt::print("Destroyed VkSurfaceKHR\n");
 		vkDestroyInstance(m_instance, nullptr);
+		fmt::print("Destroyed VkInstance\n");
 		glfwDestroyWindow(m_window);
 		glfwTerminate();
 		fmt::print("Terminating\n");
@@ -39,7 +42,7 @@ namespace core {
 
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwRequiredExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-		fmt::print("{} extensions supported\n", glfwExtensionCount);
+		fmt::print("{} GLFW extensions supported\n", glfwExtensionCount);
 
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
