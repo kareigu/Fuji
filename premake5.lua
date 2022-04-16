@@ -1,7 +1,7 @@
-workspace "Application"
+workspace "Engine"
    configurations { "Debug", "Release" }
    architecture "x64"
-   startproject "Application"
+   startproject "Engine"
    source_files = {
 	   "src/**.h", 
 	   "src/**.hpp",
@@ -9,8 +9,9 @@ workspace "Application"
    }
    
    include "vendor/fmt/premake.lua"
+   include "vendor/glfw/premake5.lua"
 
-project "Application"
+project "Engine"
    kind "ConsoleApp"
    language "C++"
    targetdir "build/bin/%{cfg.buildcfg}"
@@ -21,16 +22,21 @@ project "Application"
    includedirs {
 	"src/",
      "vendor/fmt/include",
+	"vendor/glfw/include",
    }
 
    libdirs { "vendor" }
 
    links {
-      "fmt"
+      "fmt",
+	 "glfw"
    }
    
    filter "system:windows"
       cppdialect "C++20"
+	 links {
+	 	"opengl32"
+	 }
 
    filter "system:linux"
       cppdialect "gnu++2a"

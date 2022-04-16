@@ -1,8 +1,8 @@
-#include <Application/core.h>
+#include "Core/core.h"
 
 
 int main() {
-  int result = Application::run();
+  int result = core::run();
 
   return result;
 }
