@@ -33,13 +33,10 @@ project "Engine"
    }
    
    filter "system:windows"
-      cppdialect "C++20"
-	 links {
-	 	"opengl32"
-	 }
+      cppdialect "C++17"
 
    filter "system:linux"
-      cppdialect "gnu++2a"
+      cppdialect "gnu++17"
 
 
    filter "configurations:Debug"

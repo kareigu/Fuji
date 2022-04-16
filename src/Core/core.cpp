@@ -1,36 +1,26 @@
 #include "core.h"
 #include <fmt/core.h>
-#include <GLFW/glfw3.h>
+
+#include <vector>
+
+#include "window.h"
 
 namespace core {
 	int run() {
-		GLFWwindow* window;
+		Window window(800, 600, "Engine");
 
-		if (!glfwInit())
-			return -1;
-		fmt::print("Init\n");
+		if (window.init())
+			return EXIT_FAILURE;
 
-		window = glfwCreateWindow(800, 600, "Engine", NULL, NULL);
-		if (!window) {
-			glfwTerminate();
-			fmt::print("Couldn't create window\n");
-			return -1;
-		}
-		fmt::print("Created window {:p}\n", static_cast<void*>(window));
+		while (window.shouldRun()) {
+			//glClear(GL_COLOR_BUFFER_BIT);
 
-		glfwMakeContextCurrent(window);
-		fmt::print("Set rendering context {:p}\n", static_cast<void*>(window));
+			//glfwSwapBuffers(window);
 
-		while (!glfwWindowShouldClose(window)) {
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			glfwSwapBuffers(window);
-
-			glfwPollEvents();
+			window.poll();
 		}
 
-		glfwTerminate();
-		fmt::print("Terminating\n");
-		return 0;
+		window.close();
+		return EXIT_SUCCESS;
 	}
 }
