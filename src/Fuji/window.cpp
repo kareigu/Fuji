@@ -46,14 +46,39 @@ namespace fuji {
 		return indices;
 	}
 
+	static const std::vector<const char*> device_extensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	};
+
+	static bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
+		uint32_t extensions_count;
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensions_count, nullptr);
+
+		std::vector<VkExtensionProperties> available_extensions(extensions_count);
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensions_count, available_extensions.data());
+
+		std::set<std::string> required_extensions(device_extensions.begin(), device_extensions.end());
+
+		for (const auto& extension : available_extensions) {
+			if (required_extensions.erase(extension.extensionName) > 0)
+				fmt::print("Required extension {:s} v{:d} available\n", extension.extensionName, extension.specVersion);
+		}
+
+		return required_extensions.empty();
+	}
+
 	static bool deviceSuitable(VkPhysicalDevice device, QueueFamilyIndices queue_family_indices) {
 		VkPhysicalDeviceProperties device_properties;
 		VkPhysicalDeviceFeatures device_features;
 		vkGetPhysicalDeviceProperties(device, &device_properties);
 		vkGetPhysicalDeviceFeatures(device, &device_features);
 
+		bool properties_and_features = device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && device_features.geometryShader;
 
-		return device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && device_features.geometryShader && queue_family_indices.ready();
+		bool extensions_supported = checkDeviceExtensionSupport(device);
+
+
+		return queue_family_indices.ready() && properties_and_features && extensions_supported;
 	}
 
 
@@ -212,6 +237,10 @@ namespace fuji {
 
 		create_info.pEnabledFeatures = &device_features;
 		create_info.enabledLayerCount = 0;
+
+		create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
+		create_info.ppEnabledExtensionNames = device_extensions.data();
+
 
 		if (vkCreateDevice(m_physical_device, &create_info, nullptr, &m_device) != VK_SUCCESS)
 			return EXIT_FAILURE;
