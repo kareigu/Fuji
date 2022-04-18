@@ -10,8 +10,9 @@
 namespace fuji {
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphics;
+		std::optional<uint32_t> present;
 
-		bool ready() { return graphics.has_value(); }
+		bool ready() { return graphics.has_value() && present.has_value(); }
 	};
 
 	class Window {
@@ -44,6 +45,7 @@ namespace fuji {
 
 		QueueFamilyIndices m_queue_families{};
 		VkQueue m_graphics_queue = VK_NULL_HANDLE;
+		VkQueue m_present_queue = VK_NULL_HANDLE;
 	};
 }
 
