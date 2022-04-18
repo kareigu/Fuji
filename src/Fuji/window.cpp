@@ -67,7 +67,28 @@ namespace fuji {
 		return required_extensions.empty();
 	}
 
-	static bool deviceSuitable(VkPhysicalDevice device, QueueFamilyIndices queue_family_indices) {
+	static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
+		SwapChainSupportDetails details;
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+		uint32_t formats_count = 0;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formats_count, nullptr);
+		if (formats_count > 0) {
+			details.formats.resize(formats_count);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formats_count, details.formats.data());
+		}
+
+		uint32_t present_modes_count = 0;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, nullptr);
+		if (present_modes_count > 0) {
+			details.present_modes.resize(present_modes_count);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, details.present_modes.data());
+		}
+
+		return details;
+	}
+
+	static bool deviceSuitable(VkPhysicalDevice device, QueueFamilyIndices queue_family_indices, SwapChainSupportDetails swapchain_details) {
 		VkPhysicalDeviceProperties device_properties;
 		VkPhysicalDeviceFeatures device_features;
 		vkGetPhysicalDeviceProperties(device, &device_properties);
@@ -77,8 +98,10 @@ namespace fuji {
 
 		bool extensions_supported = checkDeviceExtensionSupport(device);
 
+		bool swapchain_supported = swapchain_details.ready();
+		swapchain_supported ? fmt::print("Swapchain supported\n") : fmt::print("Swapchain not supported\n");
 
-		return queue_family_indices.ready() && properties_and_features && extensions_supported;
+		return queue_family_indices.ready() && properties_and_features && extensions_supported && swapchain_supported;
 	}
 
 
@@ -199,7 +222,8 @@ namespace fuji {
 		for (const auto& device : physical_devices) {
 			FMT_ASSERT(m_surface != VK_NULL_HANDLE, "Surface not present during piccking VkPhysicalDevice");
 			m_queue_families = findQueueFamilies(device, m_surface);
-			if (deviceSuitable(device, m_queue_families)) {
+			m_sc_support_details = querySwapChainSupport(device, m_surface);
+			if (deviceSuitable(device, m_queue_families, m_sc_support_details)) {
 				m_physical_device = device;
 				break;
 			}

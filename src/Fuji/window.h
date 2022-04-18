@@ -6,6 +6,7 @@
 
 #include <string>
 #include <optional>
+#include <vector>
 
 namespace fuji {
 	struct QueueFamilyIndices {
@@ -13,6 +14,14 @@ namespace fuji {
 		std::optional<uint32_t> present;
 
 		bool ready() { return graphics.has_value() && present.has_value(); }
+	};
+
+	struct SwapChainSupportDetails {
+		VkSurfaceCapabilitiesKHR capabilities;
+		std::vector<VkSurfaceFormatKHR> formats;
+		std::vector<VkPresentModeKHR> present_modes;
+
+		bool ready() { return !formats.empty() && !present_modes.empty(); }
 	};
 
 	class Window {
@@ -44,6 +53,7 @@ namespace fuji {
 		VkDevice m_device = VK_NULL_HANDLE;
 
 		QueueFamilyIndices m_queue_families{};
+		SwapChainSupportDetails m_sc_support_details{};
 		VkQueue m_graphics_queue = VK_NULL_HANDLE;
 		VkQueue m_present_queue = VK_NULL_HANDLE;
 	};
