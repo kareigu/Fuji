@@ -17,6 +17,8 @@ project "Engine"
    targetdir "build/bin/%{cfg.buildcfg}"
    objdir "build/obj/%{cfg.buildcfg}"
 
+   flags "MultiProcessorCompile"
+
    files { source_files }
 
    includedirs {
