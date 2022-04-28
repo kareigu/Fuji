@@ -6,6 +6,8 @@
 #include <vector>
 #include <optional>
 #include <set>
+#include <limits>
+#include <algorithm>
 
 
 
@@ -65,6 +67,100 @@ namespace fuji {
 		}
 
 		return required_extensions.empty();
+	}
+
+	static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& available_formats) {
+		for (const auto& format : available_formats) {
+			if (
+				format.format == VK_FORMAT_B8G8R8A8_SRGB &&
+				format.colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR
+				) {
+				return format;
+			}
+		}
+
+		return available_formats[0];
+	}
+
+	static VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& available_present_modes) {
+		for (const auto& mode : available_present_modes) {
+			if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+				return mode;
+		}
+
+		return VK_PRESENT_MODE_FIFO_KHR;
+	}
+
+	static VkExtent2D chooseSwapExtent(GLFWwindow* const window, const VkSurfaceCapabilitiesKHR& capabilities) {
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+			return capabilities.currentExtent;
+		else {
+			int width, height;
+			glfwGetFramebufferSize(window, &width, &height);
+
+			VkExtent2D actualExtent = {
+				static_cast<uint32_t>(width),
+				static_cast<uint32_t>(height),
+			};
+
+			actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+			return actualExtent;
+		}
+	}
+
+	int Window::createSwapChain() {
+		auto surface_format = chooseSwapSurfaceFormat(m_sc_support_details.formats);
+		auto present_mode = chooseSwapPresentMode(m_sc_support_details.present_modes);
+		auto extent = chooseSwapExtent(m_window, m_sc_support_details.capabilities);
+
+		fmt::print("Got VkSurfaceFormatKHR:\n  format = {},\n  colorSpace = {}\n", 
+			surface_format.format == VK_FORMAT_B8G8R8A8_SRGB ? "VK_FORMAT_B8G8R8A8_SRGB" : "Device default", 
+			surface_format.colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR ? "VK_COLORSPACE_SRGB_NONLINEAR_KHR" : "Device default");
+		fmt::print("Got VkPresentModeKHR: {}\n", present_mode == VK_PRESENT_MODE_MAILBOX_KHR ? "VK_PRESENT_MODE_MAILBOX_KHR" : "VK_PRESENT_MODE_FIFO_KHR");
+		fmt::print("Got Extent2D(width = {}, height = {})\n", extent.width, extent.height);
+
+		uint32_t image_count = m_sc_support_details.capabilities.minImageCount + 1;
+		auto max_image_count = m_sc_support_details.capabilities.maxImageCount;
+		if (max_image_count > 0 && image_count > max_image_count)
+			image_count = max_image_count;
+
+
+		VkSwapchainCreateInfoKHR create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		create_info.surface = m_surface;
+		create_info.minImageCount = image_count;
+		create_info.imageFormat = surface_format.format;
+		create_info.imageColorSpace = surface_format.colorSpace;
+		create_info.imageExtent = extent;
+		create_info.imageArrayLayers = 1;
+		create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		if (m_queue_families.graphics != m_queue_families.present) {
+			create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			create_info.queueFamilyIndexCount = 2;
+			uint32_t family_indices[] = { m_queue_families.graphics.value(), m_queue_families.present.value() };
+			create_info.pQueueFamilyIndices = family_indices;
+		}
+		else {
+			create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			create_info.queueFamilyIndexCount = 0;
+			create_info.pQueueFamilyIndices = nullptr;
+		}
+
+		create_info.preTransform = m_sc_support_details.capabilities.currentTransform;
+		create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+		create_info.presentMode = present_mode;
+		create_info.clipped = VK_TRUE;
+
+		create_info.oldSwapchain = VK_NULL_HANDLE;
+
+		if (vkCreateSwapchainKHR(m_device, &create_info, nullptr, &m_swap_chain) != VK_SUCCESS)
+			return EXIT_FAILURE;
+
+		return EXIT_SUCCESS;
 	}
 
 	static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
@@ -194,6 +290,7 @@ namespace fuji {
 
 		if (createLogicalDevice()) {
 			fmt::print("Failed creating VkDevice\n");
+			return EXIT_FAILURE;
 		}
 
 		fmt::print("Created VkDevice({:p})\n", (void*)&m_device);
@@ -202,6 +299,13 @@ namespace fuji {
 		fmt::print("Got m_graphics_queue handle ({:p})\n", (void*)&m_graphics_queue);
 		vkGetDeviceQueue(m_device, m_queue_families.present.value(), 0, &m_present_queue);
 		fmt::print("Got m_present_queue handle ({:p})\n", (void*)&m_present_queue);
+
+		if (createSwapChain()) {
+			fmt::print("Failed creating swapchain\n");
+			return EXIT_FAILURE;
+		}
+
+		fmt::print("Created VkSwapchainKHR({:p})\n", (void*)m_swap_chain);
 
 		return EXIT_SUCCESS;
 	}

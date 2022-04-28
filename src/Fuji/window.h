@@ -44,6 +44,7 @@ namespace fuji {
 
 		int pickPhysicalDevice();
 		int createLogicalDevice();
+		int createSwapChain();
 
 		GLFWwindow* m_window = nullptr;
 		VkInstance m_instance{};
@@ -56,6 +57,7 @@ namespace fuji {
 		SwapChainSupportDetails m_sc_support_details{};
 		VkQueue m_graphics_queue = VK_NULL_HANDLE;
 		VkQueue m_present_queue = VK_NULL_HANDLE;
+		VkSwapchainKHR m_swap_chain = VK_NULL_HANDLE;
 	};
 }
 
