@@ -1,5 +1,5 @@
-#ifndef _CORE_WINDOW_H_
-#define _CORE_WINDOW_H_
+#ifndef _FUJI_WINDOW_H_
+#define _FUJI_WINDOW_H_
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
