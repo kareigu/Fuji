@@ -57,7 +57,11 @@ namespace fuji {
 		SwapChainSupportDetails m_sc_support_details{};
 		VkQueue m_graphics_queue = VK_NULL_HANDLE;
 		VkQueue m_present_queue = VK_NULL_HANDLE;
+
 		VkSwapchainKHR m_swap_chain = VK_NULL_HANDLE;
+		std::vector<VkImage> m_swap_chain_images;
+		VkFormat m_swap_chain_image_format{};
+		VkExtent2D m_swap_chain_extent{};
 	};
 }
 

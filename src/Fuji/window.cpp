@@ -160,6 +160,14 @@ namespace fuji {
 		if (vkCreateSwapchainKHR(m_device, &create_info, nullptr, &m_swap_chain) != VK_SUCCESS)
 			return EXIT_FAILURE;
 
+		vkGetSwapchainImagesKHR(m_device, m_swap_chain, &image_count, nullptr);
+		m_swap_chain_images.resize(image_count);
+		vkGetSwapchainImagesKHR(m_device, m_swap_chain, &image_count, m_swap_chain_images.data());
+
+		fmt::print("Stored swapchain images to m_swap_chain_images\n");
+		m_swap_chain_image_format = surface_format.format;
+		m_swap_chain_extent = extent;
+
 		return EXIT_SUCCESS;
 	}
 
