@@ -7,7 +7,7 @@
 
 namespace fuji {
 	int run() {
-		Window window(800, 600, "Fuji Engine");
+		Window window(1024, 768, "Fuji Engine");
 
 		if (window.init())
 			return EXIT_FAILURE;
