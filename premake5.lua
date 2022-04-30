@@ -1,4 +1,4 @@
-workspace "Engine"
+workspace "Fuji"
    configurations { "Debug", "Release" }
    architecture "x64"
    startproject "Engine"
@@ -11,7 +11,7 @@ workspace "Engine"
    include "vendor/fmt/premake.lua"
    include "vendor/glfw/premake5.lua"
 
-project "Engine"
+project "Fuji"
    kind "ConsoleApp"
    language "C++"
    targetdir "build/bin/%{cfg.buildcfg}"
