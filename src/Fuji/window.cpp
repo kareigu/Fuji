@@ -252,12 +252,24 @@ namespace fuji {
 	}
 
 	void Window::close() {
+
+		uint32_t destroyed_image_views = 0;
+		for (auto image_view : m_swap_chain_image_views) {
+			vkDestroyImageView(m_device, image_view, nullptr);
+			destroyed_image_views++;
+		}
+
+		fmt::print("Destroyed {:d} VkImageViews\n", destroyed_image_views);
+
 		vkDestroyDevice(m_device, nullptr);
 		fmt::print("Destroyed VkDevice\n");
+
 		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 		fmt::print("Destroyed VkSurfaceKHR\n");
+
 		vkDestroyInstance(m_instance, nullptr);
 		fmt::print("Destroyed VkInstance\n");
+
 		glfwDestroyWindow(m_window);
 		glfwTerminate();
 		fmt::print("Terminating\n");
@@ -347,14 +359,14 @@ namespace fuji {
 			return EXIT_FAILURE;
 		}
 
-		fmt::print("Created VkSwapchainKHR({:p})\n", (void*)m_swap_chain);
+		fmt::print("Created VkSwapchainKHR({:p}) with {:d} images\n", (void*)m_swap_chain, m_swap_chain_images.size());
 
 		if (createImageViews()) {
 			fmt::print("Failed creating VkImageViews\n");
 			return EXIT_FAILURE;
 		}
 
-		fmt::print("Created VkImageViews\n");
+		fmt::print("Created {:d} VkImageViews\n", m_swap_chain_image_views.size());
 
 		return EXIT_SUCCESS;
 	}
