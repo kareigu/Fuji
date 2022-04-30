@@ -171,6 +171,40 @@ namespace fuji {
 		return EXIT_SUCCESS;
 	}
 
+	int Window::createImageViews() {
+		m_swap_chain_image_views.resize(m_swap_chain_images.size());
+
+		for (size_t i = 0; i < m_swap_chain_images.size(); i++) {
+			VkImageViewCreateInfo create_info{};
+			create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			create_info.image = m_swap_chain_images[i];
+			create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			create_info.format = m_swap_chain_image_format;
+
+			create_info.components = { 
+				VK_COMPONENT_SWIZZLE_IDENTITY, // R
+				VK_COMPONENT_SWIZZLE_IDENTITY, // G
+				VK_COMPONENT_SWIZZLE_IDENTITY, // B
+				VK_COMPONENT_SWIZZLE_IDENTITY, // A
+			};
+
+			create_info.subresourceRange = {
+				VK_IMAGE_ASPECT_COLOR_BIT, // aspectMask
+				0,												 // baseMipLevel
+				1,												 // levelCount
+				0,												 // baseArrayLayer
+				1,												 // layerCount
+			};
+
+			if (vkCreateImageView(m_device, &create_info, nullptr, &m_swap_chain_image_views[i]) != VK_SUCCESS) {
+				fmt::print("Couldn't create VkImageViews for index {}({:p})\n", i, (void*)&m_swap_chain_images[i]);
+				return EXIT_FAILURE;
+			}
+		}
+
+		return EXIT_SUCCESS;
+	}
+
 	static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
 		SwapChainSupportDetails details;
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -314,6 +348,13 @@ namespace fuji {
 		}
 
 		fmt::print("Created VkSwapchainKHR({:p})\n", (void*)m_swap_chain);
+
+		if (createImageViews()) {
+			fmt::print("Failed creating VkImageViews\n");
+			return EXIT_FAILURE;
+		}
+
+		fmt::print("Created VkImageViews\n");
 
 		return EXIT_SUCCESS;
 	}
