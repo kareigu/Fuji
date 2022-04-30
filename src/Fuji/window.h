@@ -46,6 +46,7 @@ namespace fuji {
 		int createLogicalDevice();
 		int createSwapChain();
 		int createImageViews();
+		int createGraphicsPipeline();
 
 		GLFWwindow* m_window = nullptr;
 		VkInstance m_instance{};

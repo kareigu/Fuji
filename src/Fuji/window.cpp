@@ -8,6 +8,8 @@
 #include <set>
 #include <limits>
 #include <algorithm>
+#include <fstream>
+#include <filesystem>
 
 
 
@@ -243,6 +245,48 @@ namespace fuji {
 	}
 
 
+	static std::vector<char> readFile(const std::string& filename) {
+#ifdef DEBUG
+		auto current_path = std::filesystem::current_path();
+		auto file_path = current_path.append(fmt::format("src/Fuji/{}", filename)).generic_string();
+		fmt::print("DEBUG file path {:s}\n", file_path);
+		std::ifstream file(file_path, std::ios::ate | std::ios::binary);
+#else
+		std::ifstream file(filename, std::ios::ate | std::ios::binary);
+#endif
+
+		
+		if (!file.is_open()) {
+
+#ifdef DEBUG
+			fmt::print("Failed opening file: {:s}\n", file_path);
+#else
+			fmt::print("Failed opening file: {:s}\n", filename);
+#endif
+			return {};
+		}
+
+		size_t file_size = (size_t)file.tellg();
+		std::vector<char> buffer(file_size);
+
+		file.seekg(0);
+		file.read(buffer.data(), file_size);
+
+
+		fmt::print("Read file: {:s}\n", filename);
+		return buffer;
+	}
+
+
+	int Window::createGraphicsPipeline() {
+
+		auto vert_shader = readFile("shaders/triangle.vert.spv");
+		auto frag_shader = readFile("shaders/triangle.frag.spv");
+
+		return EXIT_SUCCESS;
+	}
+
+
 	bool Window::shouldRun() {
 		return m_window ? !glfwWindowShouldClose(m_window) : false;
 	}
@@ -367,6 +411,13 @@ namespace fuji {
 		}
 
 		fmt::print("Created {:d} VkImageViews\n", m_swap_chain_image_views.size());
+
+		if (createGraphicsPipeline()) {
+			fmt::print("Failed creating VkGraphicsPipeline\n");
+			return EXIT_FAILURE;
+		}
+
+		fmt::print("Created VkGraphicsPipeline\n");
 
 		return EXIT_SUCCESS;
 	}
