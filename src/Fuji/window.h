@@ -65,6 +65,8 @@ namespace fuji {
 		std::vector<VkImageView> m_swap_chain_image_views;
 		VkFormat m_swap_chain_image_format{};
 		VkExtent2D m_swap_chain_extent{};
+
+		VkPipelineLayout m_pipeline_layout = VK_NULL_HANDLE;
 	};
 }
 

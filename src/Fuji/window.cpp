@@ -277,11 +277,151 @@ namespace fuji {
 		return buffer;
 	}
 
+	static VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& data) {
+		VkShaderModuleCreateInfo create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		create_info.codeSize = data.size();
+		create_info.pCode = reinterpret_cast<const uint32_t*>(data.data());
+
+		VkShaderModule module;
+		if (vkCreateShaderModule(device, &create_info, nullptr, &module) != VK_SUCCESS)
+			return nullptr;
+
+		return module;
+	}
+
+
+#define CREATE_SHADER_MODULE(shader_name) createShaderModule(m_device, shader_name); \
+	if (shader_name##_module == nullptr) { \
+		fmt::print("Couldn't create VkShaderModule for {:s}\n", #shader_name); \
+		return EXIT_FAILURE; \
+	} \
+	fmt::print("Created VkShaderModule for {:s}\n", #shader_name)
 
 	int Window::createGraphicsPipeline() {
-
 		auto vert_shader = readFile("shaders/triangle.vert.spv");
 		auto frag_shader = readFile("shaders/triangle.frag.spv");
+
+		auto vert_shader_module = CREATE_SHADER_MODULE(vert_shader);
+		auto frag_shader_module = CREATE_SHADER_MODULE(frag_shader);
+
+		VkPipelineShaderStageCreateInfo vert_shader_create_info{};
+		vert_shader_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vert_shader_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vert_shader_create_info.module = vert_shader_module;
+		vert_shader_create_info.pName = "main";
+		vert_shader_create_info.pSpecializationInfo = nullptr;
+
+		VkPipelineShaderStageCreateInfo frag_shader_create_info{};
+		frag_shader_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		frag_shader_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		frag_shader_create_info.module = frag_shader_module;
+		frag_shader_create_info.pName = "main";
+		frag_shader_create_info.pSpecializationInfo = nullptr;
+
+		VkPipelineShaderStageCreateInfo shader_stages[] = { vert_shader_create_info, frag_shader_create_info };
+
+		VkPipelineVertexInputStateCreateInfo vertex_input_create_info{};
+		vertex_input_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertex_input_create_info.vertexBindingDescriptionCount = 0;
+		vertex_input_create_info.pVertexBindingDescriptions = nullptr;
+		vertex_input_create_info.vertexAttributeDescriptionCount = 0;
+		vertex_input_create_info.pVertexAttributeDescriptions = nullptr;
+
+		VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info{};
+		input_assembly_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		input_assembly_create_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		input_assembly_create_info.primitiveRestartEnable = VK_FALSE;
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(m_swap_chain_extent.width);
+		viewport.height = static_cast<float>(m_swap_chain_extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = m_swap_chain_extent;
+
+		VkPipelineViewportStateCreateInfo viewport_state_create_info{};
+		viewport_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewport_state_create_info.viewportCount = 1;
+		viewport_state_create_info.pViewports = &viewport;
+		viewport_state_create_info.scissorCount = 1;
+		viewport_state_create_info.pScissors = &scissor;
+
+		VkPipelineRasterizationStateCreateInfo rasterizer_create_info{};
+		rasterizer_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer_create_info.depthClampEnable = VK_FALSE;
+		rasterizer_create_info.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer_create_info.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer_create_info.lineWidth = 1.0f;
+		rasterizer_create_info.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer_create_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer_create_info.depthBiasEnable = VK_FALSE;
+		rasterizer_create_info.depthBiasConstantFactor = 0.0f;
+		rasterizer_create_info.depthBiasClamp = 0.0f;
+		rasterizer_create_info.depthBiasSlopeFactor = 0.0f;
+
+		VkPipelineMultisampleStateCreateInfo multisampling_create_info{};
+		multisampling_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling_create_info.sampleShadingEnable = VK_FALSE;
+		multisampling_create_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampling_create_info.minSampleShading = 1.0f;
+		multisampling_create_info.pSampleMask = nullptr;
+		multisampling_create_info.alphaToCoverageEnable = VK_FALSE;
+		multisampling_create_info.alphaToOneEnable = VK_FALSE;
+
+		VkPipelineColorBlendAttachmentState color_blend_attachment{};
+		color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		color_blend_attachment.blendEnable = VK_TRUE;
+		color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+		color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+		VkPipelineColorBlendStateCreateInfo color_blend_create_info{};
+		color_blend_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		color_blend_create_info.logicOpEnable = VK_TRUE;
+		color_blend_create_info.logicOp = VK_LOGIC_OP_AND;
+		color_blend_create_info.attachmentCount = 1;
+		color_blend_create_info.pAttachments = &color_blend_attachment;
+		color_blend_create_info.blendConstants[0] = 0.0f;
+		color_blend_create_info.blendConstants[1] = 0.0f;
+		color_blend_create_info.blendConstants[2] = 0.0f;
+		color_blend_create_info.blendConstants[3] = 0.0f;
+
+
+		std::vector<VkDynamicState> dynamic_states = {
+			VK_DYNAMIC_STATE_VIEWPORT,
+			VK_DYNAMIC_STATE_LINE_WIDTH,
+		};
+
+		VkPipelineDynamicStateCreateInfo dynamic_state_create_info{};
+		dynamic_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamic_state_create_info.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
+		dynamic_state_create_info.pDynamicStates = dynamic_states.data();
+
+		VkPipelineLayoutCreateInfo pipeline_layout_create_info{};
+		pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_create_info.setLayoutCount = 0;
+		pipeline_layout_create_info.pSetLayouts = nullptr;
+		pipeline_layout_create_info.pushConstantRangeCount = 0;
+		pipeline_layout_create_info.pPushConstantRanges = nullptr;
+
+		if (vkCreatePipelineLayout(m_device, &pipeline_layout_create_info, nullptr, &m_pipeline_layout) != VK_SUCCESS) {
+			fmt::print("Couldn't create VkPipelineLayout\n");
+			return EXIT_FAILURE;
+		}
+
+		fmt::print("Created VkPipelineLayout({:p})\n", (void*)m_pipeline_layout);
+
+		vkDestroyShaderModule(m_device, vert_shader_module, nullptr);
+		vkDestroyShaderModule(m_device, frag_shader_module, nullptr);
 
 		return EXIT_SUCCESS;
 	}
@@ -302,6 +442,9 @@ namespace fuji {
 			vkDestroyImageView(m_device, image_view, nullptr);
 			destroyed_image_views++;
 		}
+
+		vkDestroyPipelineLayout(m_device, m_pipeline_layout, nullptr);
+		fmt::print("Destroyed VkPipelineLayout\n");
 
 		fmt::print("Destroyed {:d} VkImageViews\n", destroyed_image_views);
 
