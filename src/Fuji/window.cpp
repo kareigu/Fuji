@@ -420,8 +420,65 @@ namespace fuji {
 
 		fmt::print("Created VkPipelineLayout({:p})\n", (void*)m_pipeline_layout);
 
+		VkGraphicsPipelineCreateInfo pipeline_create_info{};
+		pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipeline_create_info.stageCount = 2;
+		pipeline_create_info.pStages = shader_stages;
+		pipeline_create_info.pVertexInputState = &vertex_input_create_info;
+		pipeline_create_info.pInputAssemblyState = &input_assembly_create_info;
+		pipeline_create_info.pViewportState = &viewport_state_create_info;
+		pipeline_create_info.pRasterizationState = &rasterizer_create_info;
+		pipeline_create_info.pMultisampleState = &multisampling_create_info;
+		pipeline_create_info.pDepthStencilState = nullptr;
+		pipeline_create_info.pColorBlendState = &color_blend_create_info;
+		pipeline_create_info.pDynamicState = &dynamic_state_create_info;
+		pipeline_create_info.layout = m_pipeline_layout;
+		pipeline_create_info.renderPass = m_render_pass;
+		pipeline_create_info.subpass = 0;
+		pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
+		pipeline_create_info.basePipelineIndex = -1;
+
+		if (vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipeline_create_info, nullptr, &m_graphics_pipeline) != VK_SUCCESS) {
+			fmt::print("Couldn't create VkPipeline\n");
+			return EXIT_FAILURE;
+		}
+
 		vkDestroyShaderModule(m_device, vert_shader_module, nullptr);
 		vkDestroyShaderModule(m_device, frag_shader_module, nullptr);
+
+		return EXIT_SUCCESS;
+	}
+
+	int Window::createRenderPass() {
+		VkAttachmentDescription color_attachment{};
+		color_attachment.format = m_swap_chain_image_format;
+		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference color_attachment_ref{};
+		color_attachment_ref.attachment = 0;
+		color_attachment_ref.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &color_attachment_ref;
+
+		VkRenderPassCreateInfo render_pass_create_info{};
+		render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		render_pass_create_info.attachmentCount = 1;
+		render_pass_create_info.pAttachments = &color_attachment;
+		render_pass_create_info.subpassCount = 1;
+		render_pass_create_info.pSubpasses = &subpass;
+
+		if (vkCreateRenderPass(m_device, &render_pass_create_info, nullptr, &m_render_pass) != VK_SUCCESS) {
+			return EXIT_FAILURE;
+		}
 
 		return EXIT_SUCCESS;
 	}
@@ -442,11 +499,17 @@ namespace fuji {
 			vkDestroyImageView(m_device, image_view, nullptr);
 			destroyed_image_views++;
 		}
+		fmt::print("Destroyed {:d} VkImageViews\n", destroyed_image_views);
+
+
+		vkDestroyPipeline(m_device, m_graphics_pipeline, nullptr);
+		fmt::print("Destroyed VkPipeline\n");
 
 		vkDestroyPipelineLayout(m_device, m_pipeline_layout, nullptr);
 		fmt::print("Destroyed VkPipelineLayout\n");
 
-		fmt::print("Destroyed {:d} VkImageViews\n", destroyed_image_views);
+		vkDestroyRenderPass(m_device, m_render_pass, nullptr);
+		fmt::print("Destroyed VkRenderPass\n");
 
 		vkDestroyDevice(m_device, nullptr);
 		fmt::print("Destroyed VkDevice\n");
@@ -555,12 +618,19 @@ namespace fuji {
 
 		fmt::print("Created {:d} VkImageViews\n", m_swap_chain_image_views.size());
 
-		if (createGraphicsPipeline()) {
-			fmt::print("Failed creating VkGraphicsPipeline\n");
+		if (createRenderPass()) {
+			fmt::print("Failed creating VkRenderPass\n");
 			return EXIT_FAILURE;
 		}
 
-		fmt::print("Created VkGraphicsPipeline\n");
+		fmt::print("Created VkRenderPass({:p})\n", (void*)m_render_pass);
+
+		if (createGraphicsPipeline()) {
+			fmt::print("Failed creating VkPipeline\n");
+			return EXIT_FAILURE;
+		}
+
+		fmt::print("Created VkPipeline({:p}) for graphics\n", (void*)m_graphics_pipeline);
 
 		return EXIT_SUCCESS;
 	}

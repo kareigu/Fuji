@@ -46,6 +46,7 @@ namespace fuji {
 		int createLogicalDevice();
 		int createSwapChain();
 		int createImageViews();
+		int createRenderPass();
 		int createGraphicsPipeline();
 
 		GLFWwindow* m_window = nullptr;
@@ -66,7 +67,9 @@ namespace fuji {
 		VkFormat m_swap_chain_image_format{};
 		VkExtent2D m_swap_chain_extent{};
 
+		VkRenderPass m_render_pass = VK_NULL_HANDLE;
 		VkPipelineLayout m_pipeline_layout = VK_NULL_HANDLE;
+		VkPipeline m_graphics_pipeline = VK_NULL_HANDLE;
 	};
 }
 
