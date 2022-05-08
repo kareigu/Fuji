@@ -48,6 +48,7 @@ namespace fuji {
 		int createImageViews();
 		int createRenderPass();
 		int createGraphicsPipeline();
+		int createFramebuffers();
 
 		GLFWwindow* m_window = nullptr;
 		VkInstance m_instance{};
@@ -64,6 +65,7 @@ namespace fuji {
 		VkSwapchainKHR m_swap_chain = VK_NULL_HANDLE;
 		std::vector<VkImage> m_swap_chain_images;
 		std::vector<VkImageView> m_swap_chain_image_views;
+		std::vector<VkFramebuffer> m_swap_chain_framebuffers;
 		VkFormat m_swap_chain_image_format{};
 		VkExtent2D m_swap_chain_extent{};
 

@@ -483,6 +483,33 @@ namespace fuji {
 		return EXIT_SUCCESS;
 	}
 
+	int Window::createFramebuffers() {
+		m_swap_chain_framebuffers.resize(m_swap_chain_image_views.size());
+
+		for (size_t i = 0; i < m_swap_chain_image_views.size(); i++) {
+			VkImageView attachments[] = {
+				m_swap_chain_image_views[i],
+			};
+
+			VkFramebufferCreateInfo framebuffer_create_info{};
+			framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebuffer_create_info.renderPass = m_render_pass;
+			framebuffer_create_info.attachmentCount = 1;
+			framebuffer_create_info.pAttachments = attachments;
+			framebuffer_create_info.width = m_swap_chain_extent.width;
+			framebuffer_create_info.height = m_swap_chain_extent.height;
+			framebuffer_create_info.layers = 1;
+
+			if (vkCreateFramebuffer(m_device, &framebuffer_create_info, nullptr, &m_swap_chain_framebuffers[i]) != VK_SUCCESS) {
+				fmt::print("Couldn't created VkFramebuffer for VkImageView({:p}) #{:d}", (void*)&m_swap_chain_image_views[i], i);
+				return EXIT_FAILURE;
+			}
+		}
+
+
+		return EXIT_SUCCESS;
+	}
+
 
 	bool Window::shouldRun() {
 		return m_window ? !glfwWindowShouldClose(m_window) : false;
@@ -493,6 +520,12 @@ namespace fuji {
 	}
 
 	void Window::close() {
+		uint32_t destroyed_framebuffers = 0;
+		for (auto framebuffer : m_swap_chain_framebuffers) {
+			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+			destroyed_framebuffers++;
+		}
+		fmt::print("Destroyed {:d} VkFramebuffers\n", destroyed_framebuffers);
 
 		uint32_t destroyed_image_views = 0;
 		for (auto image_view : m_swap_chain_image_views) {
@@ -631,6 +664,13 @@ namespace fuji {
 		}
 
 		fmt::print("Created VkPipeline({:p}) for graphics\n", (void*)m_graphics_pipeline);
+
+		if (createFramebuffers()) {
+			fmt::print("Failed creating VkFramebuffers\n");
+			return EXIT_FAILURE;
+		}
+
+		fmt::print("Created {:d} VkFramebuffers\n", m_swap_chain_framebuffers.size());
 
 		return EXIT_SUCCESS;
 	}
