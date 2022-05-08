@@ -537,6 +537,21 @@ namespace fuji {
 	}
 
 	int Window::createSyncObjects() {
+		VkSemaphoreCreateInfo semaphore_create_info{};
+		semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fence_create_info{};
+		fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+		if 
+			(
+			vkCreateSemaphore(m_device, &semaphore_create_info, nullptr, &m_image_available) ||
+			vkCreateSemaphore(m_device, &semaphore_create_info, nullptr, &m_rendering_finished) ||
+			vkCreateFence(m_device, &fence_create_info, nullptr, &m_in_flight)
+			)
+		{
+			return EXIT_FAILURE;
+		}
 
 		return EXIT_SUCCESS;
 	}
@@ -588,6 +603,11 @@ namespace fuji {
 	}
 
 	void Window::close() {
+		vkDestroySemaphore(m_device, m_image_available, nullptr);
+		vkDestroySemaphore(m_device, m_rendering_finished, nullptr);
+		vkDestroyFence(m_device, m_in_flight, nullptr);
+		fmt::print("Destroyed synchronisation objects\n");
+
 		vkDestroyCommandPool(m_device, m_command_pool, nullptr);
 		fmt::print("Destroyed VkCommandPool\n");
 
@@ -755,6 +775,14 @@ namespace fuji {
 			return EXIT_FAILURE;
 		}
 		fmt::print("Created VkCommandBuffer({:p})\n", (void*)m_command_buffer);
+
+		if (createSyncObjects()) {
+			fmt::print("Failed creating synchronisation objects\n");
+			return EXIT_FAILURE;
+		}
+		fmt::print("Created VkSemaphore({:p}) for image available\n", (void*)m_image_available);
+		fmt::print("Created VkSemaphore({:p}) for rendering finished\n", (void*)m_rendering_finished);
+		fmt::print("Created VkFence({:p}) for in flight\n", (void*)m_in_flight);
 
 		return EXIT_SUCCESS;
 	}

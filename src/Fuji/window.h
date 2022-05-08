@@ -81,6 +81,11 @@ namespace fuji {
 		VkRenderPass m_render_pass = VK_NULL_HANDLE;
 		VkPipelineLayout m_pipeline_layout = VK_NULL_HANDLE;
 		VkPipeline m_graphics_pipeline = VK_NULL_HANDLE;
+
+		VkSemaphore m_image_available = VK_NULL_HANDLE;
+		VkSemaphore m_rendering_finished = VK_NULL_HANDLE;
+		VkFence m_in_flight = VK_NULL_HANDLE;
+
 	};
 }
 
