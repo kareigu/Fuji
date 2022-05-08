@@ -510,6 +510,70 @@ namespace fuji {
 		return EXIT_SUCCESS;
 	}
 
+	int Window::createCommandPool() {
+		VkCommandPoolCreateInfo command_pool_create_info{};
+		command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		command_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		command_pool_create_info.queueFamilyIndex = m_queue_families.graphics.value();
+
+		if (vkCreateCommandPool(m_device, &command_pool_create_info, nullptr, &m_command_pool) != VK_SUCCESS)
+			return EXIT_FAILURE;
+
+
+		return EXIT_SUCCESS;
+	}
+
+	int Window::createCommandBuffer() {
+		VkCommandBufferAllocateInfo allocate_info{};
+		allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocate_info.commandPool = m_command_pool;
+		allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocate_info.commandBufferCount = 1;
+
+		if (vkAllocateCommandBuffers(m_device, &allocate_info, &m_command_buffer) != VK_SUCCESS)
+			return EXIT_FAILURE;
+
+		return EXIT_SUCCESS;
+	}
+
+	int Window::createSyncObjects() {
+
+		return EXIT_SUCCESS;
+	}
+
+	int Window::recordCommandBuffer(uint32_t image_index) {
+		VkCommandBufferBeginInfo begin_info{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = VK_NULL_HANDLE;
+
+		if (vkBeginCommandBuffer(m_command_buffer, &begin_info) != VK_SUCCESS) {
+			fmt::print("Couldn't begin command buffer\n");
+			return EXIT_FAILURE;
+		}
+
+		VkRenderPassBeginInfo render_pass_begin_info{};
+		render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		render_pass_begin_info.renderPass = m_render_pass;
+		render_pass_begin_info.framebuffer = m_swap_chain_framebuffers[image_index];
+		render_pass_begin_info.renderArea = { {0, 0}, m_swap_chain_extent }; // Offset, extent
+		VkClearValue clear_colour = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+		render_pass_begin_info.clearValueCount = 1;
+		render_pass_begin_info.pClearValues = &clear_colour;
+
+		vkCmdBeginRenderPass(m_command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(m_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphics_pipeline);
+		vkCmdDraw(m_command_buffer, 3, 1, 0, 0);
+		vkCmdEndRenderPass(m_command_buffer);
+
+		if (vkEndCommandBuffer(m_command_buffer) != VK_SUCCESS) {
+			fmt::print("Failed recording command buffer\n");
+			return EXIT_FAILURE;
+		}
+
+		return EXIT_SUCCESS;
+	}
+
 
 	bool Window::shouldRun() {
 		return m_window ? !glfwWindowShouldClose(m_window) : false;
@@ -519,7 +583,14 @@ namespace fuji {
 		glfwPollEvents();
 	}
 
+	void Window::draw() {
+
+	}
+
 	void Window::close() {
+		vkDestroyCommandPool(m_device, m_command_pool, nullptr);
+		fmt::print("Destroyed VkCommandPool\n");
+
 		uint32_t destroyed_framebuffers = 0;
 		for (auto framebuffer : m_swap_chain_framebuffers) {
 			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
@@ -671,6 +742,19 @@ namespace fuji {
 		}
 
 		fmt::print("Created {:d} VkFramebuffers\n", m_swap_chain_framebuffers.size());
+
+		if (createCommandPool()) {
+			fmt::print("Failed creating VkCommandPool\n");
+			return EXIT_FAILURE;
+		}
+
+		fmt::print("Created VkCommandPool({:p})\n", (void*)m_command_pool);
+
+		if (createCommandBuffer()) {
+			fmt::print("Failed creating VkCommandBuffer\n");
+			return EXIT_FAILURE;
+		}
+		fmt::print("Created VkCommandBuffer({:p})\n", (void*)m_command_buffer);
 
 		return EXIT_SUCCESS;
 	}

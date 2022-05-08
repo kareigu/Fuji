@@ -18,6 +18,7 @@ namespace fuji {
 			//glfwSwapBuffers(window);
 
 			window.poll();
+			window.draw();
 		}
 
 		window.close();

@@ -37,6 +37,8 @@ namespace fuji {
 
 		void poll();
 
+		void draw();
+
 	private:
 		const int m_width = 800;
 		const int m_height = 600;
@@ -49,6 +51,11 @@ namespace fuji {
 		int createRenderPass();
 		int createGraphicsPipeline();
 		int createFramebuffers();
+		int createCommandPool();
+		int createCommandBuffer();
+		int createSyncObjects();
+
+		int recordCommandBuffer(uint32_t);
 
 		GLFWwindow* m_window = nullptr;
 		VkInstance m_instance{};
@@ -61,6 +68,8 @@ namespace fuji {
 		SwapChainSupportDetails m_sc_support_details{};
 		VkQueue m_graphics_queue = VK_NULL_HANDLE;
 		VkQueue m_present_queue = VK_NULL_HANDLE;
+		VkCommandPool m_command_pool = VK_NULL_HANDLE;
+		VkCommandBuffer m_command_buffer = VK_NULL_HANDLE;
 
 		VkSwapchainKHR m_swap_chain = VK_NULL_HANDLE;
 		std::vector<VkImage> m_swap_chain_images;
