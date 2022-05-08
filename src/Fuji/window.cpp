@@ -469,12 +469,22 @@ namespace fuji {
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &color_attachment_ref;
 
+		VkSubpassDependency dependency{};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 		VkRenderPassCreateInfo render_pass_create_info{};
 		render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		render_pass_create_info.attachmentCount = 1;
 		render_pass_create_info.pAttachments = &color_attachment;
 		render_pass_create_info.subpassCount = 1;
 		render_pass_create_info.pSubpasses = &subpass;
+		render_pass_create_info.dependencyCount = 1;
+		render_pass_create_info.pDependencies = &dependency;
 
 		if (vkCreateRenderPass(m_device, &render_pass_create_info, nullptr, &m_render_pass) != VK_SUCCESS) {
 			return EXIT_FAILURE;
@@ -542,6 +552,7 @@ namespace fuji {
 
 		VkFenceCreateInfo fence_create_info{};
 		fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		if 
 			(
@@ -599,7 +610,53 @@ namespace fuji {
 	}
 
 	void Window::draw() {
+		vkWaitForFences(m_device, 1, &m_in_flight, VK_TRUE, UINT64_MAX);
+		vkResetFences(m_device, 1, &m_in_flight);
 
+		uint32_t image_index;
+		vkAcquireNextImageKHR(m_device, m_swap_chain, UINT64_MAX, m_image_available, VK_NULL_HANDLE, &image_index);
+		vkResetCommandBuffer(m_command_buffer, 0);
+		recordCommandBuffer(image_index);
+
+		VkSubmitInfo submit_info{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		
+		VkSemaphore wait_semaphores[] = { m_image_available };
+		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submit_info.waitSemaphoreCount = 1;
+		submit_info.pWaitSemaphores = wait_semaphores;
+		submit_info.pWaitDstStageMask = wait_stages;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &m_command_buffer;
+		VkSemaphore signal_semaphores[] = { m_rendering_finished };
+		submit_info.signalSemaphoreCount = 1;
+		submit_info.pSignalSemaphores = signal_semaphores;
+
+		if (vkQueueSubmit(m_graphics_queue, 1, &submit_info, m_in_flight) != VK_SUCCESS) {
+			fmt::print("Couldn't submit draw commands to the command buffer\n");
+			return;
+		}
+
+		VkPresentInfoKHR present_info{};
+		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		present_info.waitSemaphoreCount = 1;
+		present_info.pWaitSemaphores = signal_semaphores;
+		VkSwapchainKHR swap_chains[] = { m_swap_chain };
+		present_info.swapchainCount = 1;
+		present_info.pSwapchains = swap_chains;
+		present_info.pImageIndices = &image_index;
+		present_info.pResults = VK_NULL_HANDLE;
+
+		vkQueuePresentKHR(m_present_queue, &present_info);
+
+		auto now = std::chrono::high_resolution_clock::now();
+		auto delta = now - m_last_frame_time;
+		m_last_frame_time = now;
+		m_delta = delta.count() * 1e-9;
+
+		float fps = 1.0f / m_delta;
+		auto new_title = fmt::format("{:s} | {:.2f}fps | {:.3f} delta", m_title, fps, m_delta);
+		glfwSetWindowTitle(m_window, new_title.c_str());
 	}
 
 	void Window::close() {

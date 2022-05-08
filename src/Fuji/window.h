@@ -7,6 +7,7 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <chrono>
 
 namespace fuji {
 	struct QueueFamilyIndices {
@@ -43,6 +44,9 @@ namespace fuji {
 		const int m_width = 800;
 		const int m_height = 600;
 		std::string m_title{};
+
+		std::chrono::steady_clock::time_point m_last_frame_time = std::chrono::high_resolution_clock::now();
+		float m_delta = 0.0f;
 
 		int pickPhysicalDevice();
 		int createLogicalDevice();
