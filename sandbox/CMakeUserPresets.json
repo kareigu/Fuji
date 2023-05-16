@@ -1,0 +1,10 @@
+{
+    "version": 4,
+    "vendor": {
+        "conan": {}
+    },
+    "include": [
+        "/Users/eetuk/dev/Fuji/sandbox/build/Release/generators/CMakePresets.json",
+        "/Users/eetuk/dev/Fuji/sandbox/build/Debug/generators/CMakePresets.json"
+    ]
+}

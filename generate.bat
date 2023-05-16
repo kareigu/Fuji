@@ -1,1 +1,0 @@
-vendor\bin\premake\premake5.exe %1
